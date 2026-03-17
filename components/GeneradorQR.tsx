@@ -29,10 +29,41 @@ export default function GeneradorQR() {
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [tratamiento, setTratamiento] = useState('');
-  const [medico, setMedico] = useState('');
-  const [especialidad, setEspecialidad] = useState('');
-  const [rutMedico, setRutMedico] = useState('');
-  const [registroMedico, setRegistroMedico] = useState('');
+  const [medico, setMedico] = useState('Pablo Z Millaleo Cea');
+  const [especialidad, setEspecialidad] = useState('Medico General');
+  const [rutMedico, setRutMedico] = useState('12796257-8');
+  const [registroMedico, setRegistroMedico] = useState('259049');
+
+  const calcularEdad = (fecha: string) => {
+    setFechaNacimiento(fecha);
+    const parts = fecha.includes('-') ? fecha.split('-') : fecha.split('/');
+    if (parts.length === 3) {
+      const d = parseInt(parts[0]);
+      const m = parseInt(parts[1]);
+      const y = parseInt(parts[2].length === 2 ? `20${parts[2]}` : parts[2]);
+
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d) && y > 1900) {
+        const today = new Date();
+        const birthDate = new Date(y, m - 1, d);
+        let years = today.getFullYear() - birthDate.getFullYear();
+        let months = today.getMonth() - birthDate.getMonth();
+        let days = today.getDate() - birthDate.getDate();
+
+        if (days < 0) {
+          months--;
+          days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+        }
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+
+        if (years >= 0) {
+          setEdad(`A:${years} M:${months} D:${days}`);
+        }
+      }
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +71,11 @@ export default function GeneradorQR() {
     
     const idUnico = template === 'contrato' ? `CT-${Date.now()}` : `LM-${Date.now()}`;
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const urlValidacion = `${baseUrl}/validar/${idUnico}`;
+    let urlValidacion = `${baseUrl}/validar/${idUnico}`;
 
     let payload: any = {
       id: idUnico,
       tipo_plantilla: template,
-      url: urlValidacion,
       fecha_emision: new Date().toLocaleDateString('es-CL'),
     };
 
@@ -81,6 +111,18 @@ export default function GeneradorQR() {
         registro_medico: registroMedico
       };
     }
+
+    // Codificar los datos estáticos en la URL para que la página de validación pueda leerlos
+    if (typeof window !== 'undefined') {
+      try {
+        const base64Data = btoa(encodeURIComponent(JSON.stringify(payload)));
+        urlValidacion = `${urlValidacion}?d=${base64Data}`;
+      } catch (e) {
+        console.error("Error codificando datos", e);
+      }
+    }
+
+    payload.url = urlValidacion;
 
     setContratoGenerado(payload);
     setLoading(false);
@@ -165,7 +207,7 @@ export default function GeneradorQR() {
             <div className="sm:col-span-2 text-md font-bold text-blue-800 border-b pb-1">Datos del Paciente</div>
             <div><label className="block text-xs font-medium text-gray-700">Paciente</label><input required value={paciente} onChange={e=>setPaciente(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
             <div><label className="block text-xs font-medium text-gray-700">RUN</label><input required value={rutPaciente} onChange={e=>setRutPaciente(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
-            <div><label className="block text-xs font-medium text-gray-700">Fecha Nacimiento</label><input required value={fechaNacimiento} onChange={e=>setFechaNacimiento(e.target.value)} placeholder="DD-MM-YYYY" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Fecha Nacimiento</label><input required value={fechaNacimiento} onChange={e=>calcularEdad(e.target.value)} placeholder="DD-MM-YYYY" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
             <div><label className="block text-xs font-medium text-gray-700">Edad Formato (A:9 M:2 D:0)</label><input required value={edad} onChange={e=>setEdad(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
             <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-700">Dirección</label><input required value={direccion} onChange={e=>setDireccion(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
             

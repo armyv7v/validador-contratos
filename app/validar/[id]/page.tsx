@@ -1,44 +1,79 @@
 import db from '../../../db.json';
 
-export default async function PaginaValidacion({ params }: { params: Promise<{ id: string }> }) {
+export default async function PaginaValidacion({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const { id } = await params;
+  const sParams = await searchParams;
+  const dParam = sParams.d;
   
-  // Simulated database lookup
   let documento: any = null;
 
-  if (id === 'doc-anexo-001') {
-    documento = (db as any)[id];
-  } else if (id.startsWith('CT-')) {
-    documento = {
-      tipo_plantilla: 'contrato',
-      empresa: "Empresa de Demostración SpA",
-      tipo_documento: "Contrato Laboral",
-      estado: "VÁLIDO",
-      fecha_emision: new Date().toLocaleDateString('es-CL'),
-      trabajador: "Juan Pérez",
-      rut_trabajador: "11.222.333-4",
-      cargo: "Especialista",
-      firmantes: [
-        { nombre: "Representante Legal", rut: "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
-        { nombre: "Juan Pérez", rut: "11.222.333-4", email: "juan.perez@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
-      ]
-    };
-  } else if (id.startsWith('LM-')) {
-    documento = {
-      tipo_plantilla: 'medico',
-      empresa: "DocDoc Express Clinic",
-      tipo_documento: "Certificado Médico",
-      estado: "VÁLIDO",
-      fecha_emision: new Date().toLocaleDateString('es-CL'),
-      paciente: "Paciente de Demostración",
-      rut_paciente: "19.876.543-2",
-      diagnostico: "Cuadro Respiratorio",
-      reposo: "03 días",
-      medico: "Dr. Médico Tratante",
-      firmantes: [
-        { nombre: "Dr. Médico Tratante", rut: "10.000.000-0", email: "medico@docdoc.cl", fecha: new Date().toLocaleString('es-CL'), ip: "10.0.0.1", token: "z9y8x7w6v5u4t3s2" }
-      ]
-    };
+  if (dParam && typeof dParam === 'string') {
+    try {
+      const decodedStr = decodeURIComponent(Buffer.from(dParam, 'base64').toString('utf-8'));
+      documento = JSON.parse(decodedStr);
+      
+      // Inject mock firmantes if none exist since they aren't generated in the form payload
+      if (!documento.firmantes) {
+         if (documento.tipo_plantilla === 'medico') {
+            documento.firmantes = [
+              { nombre: documento.medico || "Dr. Médico Tratante", rut: documento.rut_medico || "10.000.000-0", email: "medico@clinica.cl", fecha: new Date().toLocaleString('es-CL'), ip: "10.0.0.1", token: "z9y8x7w6v5u4t3s2" }
+            ];
+            documento.empresa = documento.empresa || "Clinica DocDoc";
+         } else {
+            documento.firmantes = [
+              { nombre: "Representante Legal", rut: documento.rut_empresa || "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
+              { nombre: documento.trabajador || "Trabajador", rut: documento.rut_trabajador || "11.222.333-4", email: "trabajador@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
+            ];
+         }
+      }
+      documento.estado = "VÁLIDO";
+    } catch (e) {
+      console.error("Error decodificando datos del documento:", e);
+    }
+  }
+
+  // Fallback a Base de Datos Simulada
+  if (!documento) {
+    if (id === 'doc-anexo-001') {
+      documento = (db as any)[id];
+    } else if (id.startsWith('CT-')) {
+      documento = {
+        tipo_plantilla: 'contrato',
+        empresa: "Empresa de Demostración SpA",
+        tipo_documento: "Contrato Laboral",
+        estado: "VÁLIDO",
+        fecha_emision: new Date().toLocaleDateString('es-CL'),
+        trabajador: "Juan Pérez",
+        rut_trabajador: "11.222.333-4",
+        cargo: "Especialista",
+        firmantes: [
+          { nombre: "Representante Legal", rut: "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
+          { nombre: "Juan Pérez", rut: "11.222.333-4", email: "juan.perez@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
+        ]
+      };
+    } else if (id.startsWith('LM-')) {
+      documento = {
+        tipo_plantilla: 'medico',
+        empresa: "DocDoc Express Clinic",
+        tipo_documento: "Certificado Médico",
+        estado: "VÁLIDO",
+        fecha_emision: new Date().toLocaleDateString('es-CL'),
+        paciente: "Paciente de Demostración",
+        rut_paciente: "19.876.543-2",
+        diagnostico: "Cuadro Respiratorio",
+        reposo: "03 días",
+        medico: "Dr. Médico Tratante",
+        firmantes: [
+          { nombre: "Dr. Médico Tratante", rut: "10.000.000-0", email: "medico@docdoc.cl", fecha: new Date().toLocaleString('es-CL'), ip: "10.0.0.1", token: "z9y8x7w6v5u4t3s2" }
+        ]
+      };
+    }
   }
 
   if (!documento) {
