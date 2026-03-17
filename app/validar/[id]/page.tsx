@@ -20,24 +20,58 @@ export default async function PaginaValidacion({
       while (b64.length % 4) {
         b64 += '=';
       }
-      const decodedStr = decodeURIComponent(Buffer.from(b64, 'base64').toString('utf-8'));
-      documento = JSON.parse(decodedStr);
       
-      // Inject mock firmantes if none exist since they aren't generated in the form payload
-      if (!documento.firmantes) {
-         if (documento.tipo_plantilla === 'medico') {
-            documento.firmantes = [
-              { nombre: documento.medico || "Dr. Médico Tratante", rut: documento.rut_medico || "10.000.000-0", email: "medico@clinica.cl", fecha: new Date().toLocaleString('es-CL'), ip: "10.0.0.1", token: "z9y8x7w6v5u4t3s2" }
-            ];
-            documento.empresa = documento.empresa || "Clinica DocDoc";
-         } else {
-            documento.firmantes = [
-              { nombre: "Representante Legal", rut: documento.rut_empresa || "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
-              { nombre: documento.trabajador || "Trabajador", rut: documento.rut_trabajador || "11.222.333-4", email: "trabajador@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
-            ];
-         }
+      const buffer = Buffer.from(b64, 'base64');
+      const decodedStr = new TextDecoder('utf-8').decode(buffer);
+      const parsedArr = JSON.parse(decodedStr);
+
+      if (Array.isArray(parsedArr)) {
+        if (parsedArr[0] === 'c') {
+          documento = {
+            tipo_plantilla: 'contrato',
+            tipo_documento: 'Contrato Laboral',
+            id: parsedArr[1],
+            fecha_emision: parsedArr[2],
+            empresa: parsedArr[3],
+            rut_empresa: parsedArr[4],
+            trabajador: parsedArr[5],
+            rut_trabajador: parsedArr[6],
+            cargo: parsedArr[7],
+            sueldo: parsedArr[8]
+          };
+          documento.firmantes = [
+            { nombre: "Representante Legal", rut: documento.rut_empresa || "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
+            { nombre: documento.trabajador || "Trabajador", rut: documento.rut_trabajador || "11.222.333-4", email: "trabajador@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
+          ];
+        } else if (parsedArr[0] === 'm') {
+          documento = {
+            tipo_plantilla: 'medico',
+            tipo_documento: 'Certificado Médico',
+            id: parsedArr[1],
+            fecha_emision: parsedArr[2],
+            paciente: parsedArr[3],
+            rut_paciente: parsedArr[4],
+            fecha_nacimiento: parsedArr[5],
+            edad: parsedArr[6],
+            direccion: parsedArr[7],
+            institucion: parsedArr[8],
+            diagnostico: parsedArr[9],
+            reposo: parsedArr[10],
+            fecha_inicio: parsedArr[11],
+            fecha_fin: parsedArr[12],
+            tratamiento: parsedArr[13],
+            medico: parsedArr[14],
+            especialidad: parsedArr[15],
+            rut_medico: parsedArr[16],
+            registro_medico: parsedArr[17],
+            empresa: "Clinica DocDoc"
+          };
+          documento.firmantes = [
+            { nombre: documento.medico || "Dr. Médico Tratante", rut: documento.rut_medico || "10.000.000-0", email: "medico@clinica.cl", fecha: new Date().toLocaleString('es-CL'), ip: "10.0.0.1", token: "z9y8x7w6v5u4t3s2" }
+          ];
+        }
+        documento.estado = "VÁLIDO";
       }
-      documento.estado = "VÁLIDO";
     } catch (e) {
       console.error("Error decodificando datos del documento:", e);
     }
@@ -106,10 +140,10 @@ export default async function PaginaValidacion({
 
         <div className="p-6">
           <div className="mb-8">
-            <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Detalles del Documento</h2>
+            <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Información Resumida</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">{isMedico ? 'Clínica Emisora' : 'Empresa'}</p>
+                <p className="text-sm text-gray-500">{isMedico ? 'Centro Médico' : 'Empresa'}</p>
                 <p className="font-semibold text-gray-800">{documento.empresa}</p>
               </div>
               <div>
@@ -131,26 +165,18 @@ export default async function PaginaValidacion({
                 <>
                   <div>
                     <p className="text-sm text-gray-500">Paciente</p>
-                    <p className="font-semibold text-gray-800">{documento.paciente}</p>
+                    <p className="font-semibold text-gray-800">{documento.paciente} (RUT: {documento.rut_paciente})</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Médico Tratante</p>
-                    <p className="font-semibold text-gray-800">{documento.medico}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-500">Diagnóstico / Resumen</p>
-                    <p className="font-semibold text-gray-800">{documento.diagnostico} ({documento.reposo} de reposo)</p>
+                    <p className="font-semibold text-gray-800">{documento.medico} (RUT: {documento.rut_medico})</p>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
                     <p className="text-sm text-gray-500">Trabajador</p>
-                    <p className="font-semibold text-gray-800">{documento.trabajador || 'Cecilia Loreto Ortiz Cordero'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Cargo / Motivo</p>
-                    <p className="font-semibold text-gray-800">{documento.cargo || 'Anexo Jornada Laboral'}</p>
+                    <p className="font-semibold text-gray-800">{documento.trabajador || 'Cecilia Loreto Ortiz Cordero'} (RUT: {documento.rut_trabajador})</p>
                   </div>
                 </>
               )}

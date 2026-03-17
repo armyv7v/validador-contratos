@@ -73,9 +73,63 @@ export default function GeneradorQR() {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     let urlValidacion = `${baseUrl}/validar/${idUnico}`;
 
+    // Payload optimizado minimalista para el QR
+    let compactPayload: any[];
+    if (template === 'contrato') {
+      compactPayload = [
+        'c',
+        idUnico,
+        new Date().toLocaleDateString('es-CL'),
+        empresa,
+        rutEmpresa,
+        trabajador,
+        rutTrabajador,
+        cargo,
+        sueldo
+      ];
+    } else {
+      compactPayload = [
+        'm',
+        idUnico,
+        new Date().toLocaleDateString('es-CL'),
+        paciente,
+        rutPaciente,
+        fechaNacimiento,
+        edad,
+        direccion,
+        institucion,
+        diagnostico,
+        reposo,
+        fechaInicio,
+        fechaFin,
+        tratamiento,
+        medico,
+        especialidad,
+        rutMedico,
+        registroMedico
+      ];
+    }
+
+    // Codificar los datos arr en la URL para que la página de validación pueda leerlos
+    if (typeof window !== 'undefined') {
+      try {
+        const jsonStr = JSON.stringify(compactPayload);
+        const utf8Bytes = new TextEncoder().encode(jsonStr);
+        const binaryStr = Array.from(utf8Bytes).map(b => String.fromCharCode(b)).join('');
+        const base64Data = btoa(binaryStr)
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+        urlValidacion = `${urlValidacion}?d=${base64Data}`;
+      } catch (e) {
+        console.error("Error codificando datos", e);
+      }
+    }
+
     let payload: any = {
       id: idUnico,
       tipo_plantilla: template,
+      url: urlValidacion,
       fecha_emision: new Date().toLocaleDateString('es-CL'),
     };
 
@@ -111,21 +165,6 @@ export default function GeneradorQR() {
         registro_medico: registroMedico
       };
     }
-
-    // Codificar los datos estáticos en la URL para que la página de validación pueda leerlos
-    if (typeof window !== 'undefined') {
-      try {
-        const base64Data = btoa(encodeURIComponent(JSON.stringify(payload)))
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
-        urlValidacion = `${urlValidacion}?d=${base64Data}`;
-      } catch (e) {
-        console.error("Error codificando datos", e);
-      }
-    }
-
-    payload.url = urlValidacion;
 
     setContratoGenerado(payload);
     setLoading(false);

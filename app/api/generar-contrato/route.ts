@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     const qrImageBuffer = await QRCode.toBuffer(url, {
       type: 'png',
       margin: 1,
-      width: 300,
-      errorCorrectionLevel: 'M'
+      width: 400,
+      errorCorrectionLevel: 'L'
     });
 
     const pdfDoc = await PDFDocument.create();
@@ -173,13 +173,13 @@ export async function POST(request: Request) {
       const regWidth = fontRegular.widthOfTextAtSize(regStr, 10);
       page.drawText(regStr, { x: medCenterX - (regWidth/2), y: medY - 45, size: 10, font: fontRegular });
 
-      // QR más pequeño para dar espacio (antes era 80, ahora 55)
-      const qrSize = 55;
+      // QR más fácil de leer (70 puntos de tamaño en vez de 55)
+      const qrSize = 70;
       page.drawImage(qrImage, { x: margin, y: 50, width: qrSize, height: qrSize });
       // Extrae baseUrl
       const baseUrlStr = (data.url || '').split('/validar/')[0] || '';
-      page.drawText(`Valida en ${baseUrlStr}/validar`, { x: 115, y: 92, size: 9, font: fontRegular });
-      page.drawText(`con código: ${id}`, { x: 115, y: 77, size: 9, font: fontRegular });
+      page.drawText(`Valida en ${baseUrlStr}/validar`, { x: 130, y: 92, size: 9, font: fontRegular });
+      page.drawText(`con código: ${id}`, { x: 130, y: 77, size: 9, font: fontRegular });
       
       page.drawLine({ start: { x: margin, y: 30 }, end: { x: 562, y: 30 }, thickness: 2, color: rgb(0,0,0) });
       page.drawText(`NO AUTORIZADO CAMBIO DE MEDICAMENTO`, { x: 180, y: 15, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
