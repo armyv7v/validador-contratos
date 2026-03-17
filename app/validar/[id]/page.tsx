@@ -51,7 +51,7 @@ export default async function PaginaValidacion({ params }: { params: Promise<{ i
               </div>
               <div>
                 <p className="text-sm text-gray-500">Tipo de Documento</p>
-                <p className="font-semibold text-gray-800">{documento.tipo_document_o || documento.tipo_documento}</p>
+                <p className="font-semibold text-gray-800">{documento.tipo_documento}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Estado</p>
