@@ -139,7 +139,7 @@ export async function POST(request: Request) {
             const firmaDims = firmaImage.scaleToFit(160, 80);
             
             page.drawImage(firmaImage, {
-              x: 450 - (firmaDims.width / 2),
+              x: 430 - (firmaDims.width / 2),
               y: footY - 10,
               width: firmaDims.width,
               height: firmaDims.height,
@@ -150,14 +150,14 @@ export async function POST(request: Request) {
         console.log("No se pudo cargar la firma:", e);
       }
 
-      // Datos Médico a la derecha
-      page.drawLine({ start: { x: 350, y: footY + 18 }, end: { x: 550, y: footY + 18 }, thickness: 1, color: rgb(0,0,0) });
-      page.drawText(`Firma`, { x: 435, y: footY + 5, size: 10, font: fontRegular });
-      
+      // Datos Médico a la derecha (Línea de firma igual a la de Fecha)
       const medY = footY - 15 - signatureOffset; // Bajar los nombres si hay firma grande arriba
       
+      // Dibujar línea inferior para la firma (mismo grosor y ancho aproximado que Fecha)
+      page.drawLine({ start: { x: 350, y: medY + 15 }, end: { x: 500, y: medY + 15 }, thickness: 1, color: rgb(0,0,0) });
+      
       const medNameWidth = fontBold.widthOfTextAtSize(`${data.medico || ''}`, 11);
-      page.drawText(`${data.medico || ''}`, { x: 450 - (medNameWidth/2), y: medY, size: 11, font: fontBold });
+      page.drawText(`${data.medico || ''}`, { x: 425 - (medNameWidth/2), y: medY, size: 11, font: fontBold });
       
       const espWidth = fontRegular.widthOfTextAtSize(`${data.especialidad || ''}`, 10);
       page.drawText(`${data.especialidad || ''}`, { x: 450 - (espWidth/2), y: medY - 15, size: 10, font: fontRegular });
