@@ -124,51 +124,58 @@ export async function POST(request: Request) {
       page.drawText(currentLine, { x: margin, y: currentY, size: 12, font: fontRegular });
 
       // Zona de Firmas
-      const footY = 160;
-      page.drawText(`${data.fecha_emision || ''}`, { x: 100, y: footY + 40, size: 10, font: fontRegular });
-      page.drawText(`Fecha`, { x: margin, y: footY + 20, size: 10, font: fontRegular });
-      page.drawLine({ start: { x: 100, y: footY + 18 }, end: { x: 250, y: footY + 18 }, thickness: 1, color: rgb(0,0,0) });
+      const signatureLineY = 140; // Coordenada Y exacta para la base de las líneas de firma y fecha
+
+      // Dibujar zona de Fecha (Izquierda)
+      page.drawText(`${data.fecha_emision || ''}`, { x: 100, y: signatureLineY + 5, size: 10, font: fontRegular });
+      page.drawText(`Fecha`, { x: margin, y: signatureLineY + 2, size: 10, font: fontRegular });
+      // Línea de Fecha, con un grosor similar al de la imagen
+      page.drawLine({ start: { x: 90, y: signatureLineY }, end: { x: 260, y: signatureLineY }, thickness: 1.5, color: rgb(0,0,0) });
 
       // Cargar imagen de la firma (si existe)
-      let signatureOffset = 0;
+      const medCenterX = 430;
+      let hasSignatureImage = false;
       try {
         const firmaPath = path.join(process.cwd(), 'public', 'firma.png');
         if (fs.existsSync(firmaPath)) {
             const firmaBuffer = fs.readFileSync(firmaPath);
             const firmaImage = await pdfDoc.embedPng(firmaBuffer);
-            const firmaDims = firmaImage.scaleToFit(160, 80);
+            // Escalar la firma para que la línea negra encaje bien
+            const firmaDims = firmaImage.scaleToFit(170, 85);
             
             page.drawImage(firmaImage, {
-              x: 430 - (firmaDims.width / 2),
-              y: footY - 10,
+              x: medCenterX - (firmaDims.width / 2),
+              y: signatureLineY, // La base de la imagen tocando exactamente la misma línea Y
               width: firmaDims.width,
               height: firmaDims.height,
             });
-            signatureOffset = 15;
+            hasSignatureImage = true;
         }
       } catch (e) {
         console.log("No se pudo cargar la firma:", e);
       }
 
-      // Datos Médico a la derecha (Línea de firma igual a la de Fecha)
-      const medY = footY - 15 - signatureOffset; // Bajar los nombres si hay firma grande arriba
+      // Si no hay imagen de firma, dibujamos una línea manual para que el doctor la firme
+      if (!hasSignatureImage) {
+        page.drawLine({ start: { x: medCenterX - 85, y: signatureLineY }, end: { x: medCenterX + 85, y: signatureLineY }, thickness: 1.5, color: rgb(0,0,0) });
+      }
       
-      // Dibujar línea inferior para la firma (mismo grosor y ancho aproximado que Fecha)
-      page.drawLine({ start: { x: 350, y: medY + 15 }, end: { x: 500, y: medY + 15 }, thickness: 1, color: rgb(0,0,0) });
+      // Datos Médico debajo de la línea
+      const medY = signatureLineY - 15; 
       
       const medNameWidth = fontBold.widthOfTextAtSize(`${data.medico || ''}`, 11);
-      page.drawText(`${data.medico || ''}`, { x: 425 - (medNameWidth/2), y: medY, size: 11, font: fontBold });
+      page.drawText(`${data.medico || ''}`, { x: medCenterX - (medNameWidth/2), y: medY, size: 11, font: fontBold });
       
       const espWidth = fontRegular.widthOfTextAtSize(`${data.especialidad || ''}`, 10);
-      page.drawText(`${data.especialidad || ''}`, { x: 450 - (espWidth/2), y: medY - 15, size: 10, font: fontRegular });
+      page.drawText(`${data.especialidad || ''}`, { x: medCenterX - (espWidth/2), y: medY - 15, size: 10, font: fontRegular });
       
       const rutStr = `RUN: ${data.rut_medico || ''} / REG-SIS`;
       const rutWidth = fontRegular.widthOfTextAtSize(rutStr, 10);
-      page.drawText(rutStr, { x: 450 - (rutWidth/2), y: medY - 30, size: 10, font: fontRegular });
+      page.drawText(rutStr, { x: medCenterX - (rutWidth/2), y: medY - 30, size: 10, font: fontRegular });
       
       const regStr = `N°: ${data.registro_medico || ''}`;
       const regWidth = fontRegular.widthOfTextAtSize(regStr, 10);
-      page.drawText(regStr, { x: 450 - (regWidth/2), y: medY - 45, size: 10, font: fontRegular });
+      page.drawText(regStr, { x: medCenterX - (regWidth/2), y: medY - 45, size: 10, font: fontRegular });
 
       // QR más pequeño para dar espacio (antes era 80, ahora 55)
       const qrSize = 55;
