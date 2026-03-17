@@ -129,22 +129,46 @@ export async function POST(request: Request) {
       page.drawText(`Fecha`, { x: margin, y: footY + 20, size: 10, font: fontRegular });
       page.drawLine({ start: { x: 100, y: footY + 18 }, end: { x: 250, y: footY + 18 }, thickness: 1, color: rgb(0,0,0) });
 
+      // Cargar imagen de la firma (si existe)
+      let signatureOffset = 0;
+      try {
+        const firmaPath = path.join(process.cwd(), 'public', 'firma.png');
+        if (fs.existsSync(firmaPath)) {
+            const firmaBuffer = fs.readFileSync(firmaPath);
+            const firmaImage = await pdfDoc.embedPng(firmaBuffer);
+            const firmaDims = firmaImage.scaleToFit(160, 80);
+            
+            page.drawImage(firmaImage, {
+              x: 450 - (firmaDims.width / 2),
+              y: footY - 10,
+              width: firmaDims.width,
+              height: firmaDims.height,
+            });
+            signatureOffset = 15;
+        }
+      } catch (e) {
+        console.log("No se pudo cargar la firma:", e);
+      }
+
       // Datos Médico a la derecha
       page.drawLine({ start: { x: 350, y: footY + 18 }, end: { x: 550, y: footY + 18 }, thickness: 1, color: rgb(0,0,0) });
       page.drawText(`Firma`, { x: 435, y: footY + 5, size: 10, font: fontRegular });
+      
+      const medY = footY - 15 - signatureOffset; // Bajar los nombres si hay firma grande arriba
+      
       const medNameWidth = fontBold.widthOfTextAtSize(`${data.medico || ''}`, 11);
-      page.drawText(`${data.medico || ''}`, { x: 450 - (medNameWidth/2), y: footY - 15, size: 11, font: fontBold });
+      page.drawText(`${data.medico || ''}`, { x: 450 - (medNameWidth/2), y: medY, size: 11, font: fontBold });
       
       const espWidth = fontRegular.widthOfTextAtSize(`${data.especialidad || ''}`, 10);
-      page.drawText(`${data.especialidad || ''}`, { x: 450 - (espWidth/2), y: footY - 30, size: 10, font: fontRegular });
+      page.drawText(`${data.especialidad || ''}`, { x: 450 - (espWidth/2), y: medY - 15, size: 10, font: fontRegular });
       
       const rutStr = `RUN: ${data.rut_medico || ''} / REG-SIS`;
       const rutWidth = fontRegular.widthOfTextAtSize(rutStr, 10);
-      page.drawText(rutStr, { x: 450 - (rutWidth/2), y: footY - 45, size: 10, font: fontRegular });
+      page.drawText(rutStr, { x: 450 - (rutWidth/2), y: medY - 30, size: 10, font: fontRegular });
       
       const regStr = `N°: ${data.registro_medico || ''}`;
       const regWidth = fontRegular.widthOfTextAtSize(regStr, 10);
-      page.drawText(regStr, { x: 450 - (regWidth/2), y: footY - 60, size: 10, font: fontRegular });
+      page.drawText(regStr, { x: 450 - (regWidth/2), y: medY - 45, size: 10, font: fontRegular });
 
       // QR más pequeño para dar espacio (antes era 80, ahora 55)
       const qrSize = 55;
