@@ -15,7 +15,12 @@ export default async function PaginaValidacion({
 
   if (dParam && typeof dParam === 'string') {
     try {
-      const decodedStr = decodeURIComponent(Buffer.from(dParam, 'base64').toString('utf-8'));
+      // Revertir codificación Base64URL a Base64 estándar
+      let b64 = dParam.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) {
+        b64 += '=';
+      }
+      const decodedStr = decodeURIComponent(Buffer.from(b64, 'base64').toString('utf-8'));
       documento = JSON.parse(decodedStr);
       
       // Inject mock firmantes if none exist since they aren't generated in the form payload

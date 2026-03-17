@@ -115,7 +115,10 @@ export default function GeneradorQR() {
     // Codificar los datos estáticos en la URL para que la página de validación pueda leerlos
     if (typeof window !== 'undefined') {
       try {
-        const base64Data = btoa(encodeURIComponent(JSON.stringify(payload)));
+        const base64Data = btoa(encodeURIComponent(JSON.stringify(payload)))
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
         urlValidacion = `${urlValidacion}?d=${base64Data}`;
       } catch (e) {
         console.error("Error codificando datos", e);

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       type: 'png',
       margin: 1,
       width: 300,
-      errorCorrectionLevel: 'H'
+      errorCorrectionLevel: 'M'
     });
 
     const pdfDoc = await PDFDocument.create();
