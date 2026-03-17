@@ -29,78 +29,132 @@ export async function POST(request: Request) {
       // LÓGICA CERTIFICADO MÉDICO
       // ---------------------------------
       
+      const margin = 50;
+      const contentWidth = width - (margin * 2);
+      
       // Intentar cargar el logo
+      let logoBottomY = height - 120;
       try {
         const logoPath = path.join(process.cwd(), 'public', 'logo.png');
         if (fs.existsSync(logoPath)) {
             const logoBuffer = fs.readFileSync(logoPath);
             const logoImage = await pdfDoc.embedPng(logoBuffer);
-            const logoDims = logoImage.scale(0.3); // Ajustar escala para DocDoc
+            // Escalar el logo proporcionalmente a un tamaño decente
+            const logoDims = logoImage.scaleToFit(200, 80); 
             page.drawImage(logoImage, {
-            x: width / 2 - logoDims.width / 2,
-            y: height - 150,
-            width: logoDims.width,
-            height: logoDims.height,
+              x: width / 2 - logoDims.width / 2,
+              y: height - 50 - logoDims.height,
+              width: logoDims.width,
+              height: logoDims.height,
             });
+            logoBottomY = height - 50 - logoDims.height - 15;
         }
       } catch (e) {
         console.log("No se pudo cargar el logo:", e);
       }
 
-      // Título
-      page.drawText('CERTIFICADO', {
-        x: width / 2 - 70,
-        y: height - 280,
-        size: 20,
-        font: fontBold,
-        color: rgb(0, 0, 0),
-      });
+      // Dirección centrada
+      const textCenter = (txt: string, size: number, y: number, font = fontRegular) => {
+          const txtWidth = font.widthOfTextAtSize(txt, size);
+          page.drawText(txt, { x: width / 2 - txtWidth / 2, y, size, font, color: rgb(0.2, 0.2, 0.2) });
+      };
+
+      textCenter('Clinica DocDoc', 12, logoBottomY, fontRegular);
+      textCenter('Ulriksen #.4105 , La Serena,', 12, logoBottomY - 14, fontRegular);
+      textCenter('Coquimbo  TELÉFONO:+56', 12, logoBottomY - 28, fontRegular);
+      textCenter('948472266', 12, logoBottomY - 42, fontRegular);
 
       // Cabecera paciente
-      page.drawText(`Paciente: ${data.paciente}   RUN: ${data.rut_paciente}`, { x: 50, y: height - 180, size: 10, font: fontBold });
-      page.drawText(`Fec. Nacimiento: ${data.fecha_nacimiento} [${data.edad}]   Dirección: ${data.direccion}`, { x: 50, y: height - 195, size: 10, font: fontRegular });
+      const headerY = logoBottomY - 70;
       
-      // Contenido
-      const contentY = height - 350;
-      page.drawText(`Para: ${data.institucion || '_________________'}`, { x: 50, y: contentY, size: 12, font: fontRegular });
+      // Dibujar "Paciente: Nombre RUN: 123" en negritas
+      page.drawText(`Paciente: ${data.paciente || ''}  RUN: ${data.rut_paciente || ''}`, { 
+        x: margin, 
+        y: headerY, 
+        size: 11, 
+        font: fontBold,
+        color: rgb(0.1, 0.1, 0.1)
+      });
       
-      page.drawText(`Se certifica que el paciente acudió a nuestra consulta por presentar`, { x: 50, y: contentY - 40, size: 12, font: fontRegular });
-      page.drawText(`${data.diagnostico}, se sugiere mantener reposo en`, { x: 50, y: contentY - 55, size: 12, font: fontRegular });
-      page.drawText(`domicilio durante ${data.reposo?.padStart(2, '0') || '01'} días, desde el ${data.fecha_inicio} hasta el ${data.fecha_fin}. Y se`, { x: 50, y: contentY - 70, size: 12, font: fontRegular });
-      page.drawText(`indica tratamiento ${data.tratamiento}`, { x: 50, y: contentY - 85, size: 12, font: fontRegular });
+      // Dibujar Fecha de nacimiento y dirección
+      const fechaLinea = `Fec. Nacimiento: ${data.fecha_nacimiento || ''} [${data.edad || ''}] Dirección: ${data.direccion || ''}`;
+      // Wrap manual si sobrepasa el ancho
+      const wordsHeader = fechaLinea.split(' ');
+      let currentHeader = '';
+      let headYOffset = headerY - 15;
+      for (let i = 0; i < wordsHeader.length; i++) {
+        const testLine = currentHeader + wordsHeader[i] + ' ';
+        const testWidth = fontRegular.widthOfTextAtSize(testLine, 11);
+        if (testWidth > contentWidth && i > 0) {
+          page.drawText(currentHeader, { x: margin, y: headYOffset, size: 11, font: fontRegular, color: rgb(0.2, 0.2, 0.2) });
+          currentHeader = wordsHeader[i] + ' ';
+          headYOffset -= 15;
+        } else {
+          currentHeader = testLine;
+        }
+      }
+      page.drawText(currentHeader, { x: margin, y: headYOffset, size: 11, font: fontRegular, color: rgb(0.2, 0.2, 0.2) });
+      
+      // Título
+      const titleY = headYOffset - 50;
+      textCenter('CERTIFICADO', 16, titleY, fontBold);
+      
+      // Contenido (Justificado simulado a la izquierda respetando márgenes)
+      const contentY = titleY - 40;
+      page.drawText(`Para: ${data.institucion || '_________________'}`, { x: margin, y: contentY, size: 12, font: fontRegular });
+      
+      // Párrafo grande dinámico
+      const rawText = `Se certifica que el paciente acudió a nuestra consulta por presentar ${data.diagnostico || ''}, se sugiere mantener reposo en domicilio durante ${data.reposo ? data.reposo.toString().padStart(2, '0') : '01'} días, desde el ${data.fecha_inicio || ''} hasta el ${data.fecha_fin || ''}. Y se indica tratamiento ${data.tratamiento || ''}`;
+      
+      const words = rawText.split(' ');
+      let currentLine = '';
+      let currentY = contentY - 40;
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine + words[i] + ' ';
+        const testWidth = fontRegular.widthOfTextAtSize(testLine, 12);
+        if (testWidth > contentWidth && i > 0) {
+          page.drawText(currentLine, { x: margin, y: currentY, size: 12, font: fontRegular });
+          currentLine = words[i] + ' ';
+          currentY -= 15;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      page.drawText(currentLine, { x: margin, y: currentY, size: 12, font: fontRegular });
 
       // Zona de Firmas
       const footY = 160;
-      page.drawText(`${data.fecha_emision}`, { x: 100, y: footY + 40, size: 10, font: fontRegular });
-      page.drawText(`Fecha`, { x: 50, y: footY + 20, size: 10, font: fontRegular });
+      page.drawText(`${data.fecha_emision || ''}`, { x: 100, y: footY + 40, size: 10, font: fontRegular });
+      page.drawText(`Fecha`, { x: margin, y: footY + 20, size: 10, font: fontRegular });
       page.drawLine({ start: { x: 100, y: footY + 18 }, end: { x: 250, y: footY + 18 }, thickness: 1, color: rgb(0,0,0) });
 
       // Datos Médico a la derecha
       page.drawLine({ start: { x: 350, y: footY + 18 }, end: { x: 550, y: footY + 18 }, thickness: 1, color: rgb(0,0,0) });
       page.drawText(`Firma`, { x: 435, y: footY + 5, size: 10, font: fontRegular });
-      const medNameWidth = fontBold.widthOfTextAtSize(`${data.medico}`, 11);
-      page.drawText(`${data.medico}`, { x: 450 - (medNameWidth/2), y: footY - 15, size: 11, font: fontBold });
+      const medNameWidth = fontBold.widthOfTextAtSize(`${data.medico || ''}`, 11);
+      page.drawText(`${data.medico || ''}`, { x: 450 - (medNameWidth/2), y: footY - 15, size: 11, font: fontBold });
       
-      const espWidth = fontRegular.widthOfTextAtSize(`${data.especialidad}`, 10);
-      page.drawText(`${data.especialidad}`, { x: 450 - (espWidth/2), y: footY - 30, size: 10, font: fontRegular });
+      const espWidth = fontRegular.widthOfTextAtSize(`${data.especialidad || ''}`, 10);
+      page.drawText(`${data.especialidad || ''}`, { x: 450 - (espWidth/2), y: footY - 30, size: 10, font: fontRegular });
       
-      const rutStr = `RUN: ${data.rut_medico} / REG-SIS`;
+      const rutStr = `RUN: ${data.rut_medico || ''} / REG-SIS`;
       const rutWidth = fontRegular.widthOfTextAtSize(rutStr, 10);
       page.drawText(rutStr, { x: 450 - (rutWidth/2), y: footY - 45, size: 10, font: fontRegular });
       
-      const regStr = `N°: ${data.registro_medico}`;
+      const regStr = `N°: ${data.registro_medico || ''}`;
       const regWidth = fontRegular.widthOfTextAtSize(regStr, 10);
       page.drawText(regStr, { x: 450 - (regWidth/2), y: footY - 60, size: 10, font: fontRegular });
 
-      // QR
-      const qrSize = 80;
-      page.drawImage(qrImage, { x: 50, y: 50, width: qrSize, height: qrSize });
+      // QR más pequeño para dar espacio (antes era 80, ahora 55)
+      const qrSize = 55;
+      page.drawImage(qrImage, { x: margin, y: 50, width: qrSize, height: qrSize });
       // Extrae baseUrl
-      const baseUrlStr = data.url.split('/validar/')[0] || data.url;
-      page.drawText(`Valida en ${baseUrlStr}/validar`, { x: 140, y: 110, size: 9, font: fontRegular });
-      page.drawText(`con código: ${id}`, { x: 140, y: 95, size: 9, font: fontRegular });
+      const baseUrlStr = (data.url || '').split('/validar/')[0] || '';
+      page.drawText(`Valida en ${baseUrlStr}/validar`, { x: 115, y: 92, size: 9, font: fontRegular });
+      page.drawText(`con código: ${id}`, { x: 115, y: 77, size: 9, font: fontRegular });
       
-      page.drawLine({ start: { x: 50, y: 30 }, end: { x: 562, y: 30 }, thickness: 2, color: rgb(0,0,0) });
+      page.drawLine({ start: { x: margin, y: 30 }, end: { x: 562, y: 30 }, thickness: 2, color: rgb(0,0,0) });
       page.drawText(`NO AUTORIZADO CAMBIO DE MEDICAMENTO`, { x: 180, y: 15, size: 9, font: fontBold, color: rgb(0.4, 0.4, 0.4) });
 
     } else {
