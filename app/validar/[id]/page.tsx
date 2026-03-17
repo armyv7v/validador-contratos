@@ -1,24 +1,45 @@
 import db from '../../../db.json';
 
-type Firmante = {
-  nombre: string;
-  rut: string;
-  email: string;
-  fecha: string;
-  ip: string;
-  token: string;
-};
-
-type Documento = {
-  empresa: string;
-  tipo_documento: string;
-  estado: string;
-  firmantes: Firmante[];
-};
-
 export default async function PaginaValidacion({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const documento = (db as Record<string, Documento>)[id];
+  
+  // Simulated database lookup
+  let documento: any = null;
+
+  if (id === 'doc-anexo-001') {
+    documento = (db as any)[id];
+  } else if (id.startsWith('CT-')) {
+    documento = {
+      tipo_plantilla: 'contrato',
+      empresa: "Empresa de Demostración SpA",
+      tipo_documento: "Contrato Laboral",
+      estado: "VÁLIDO",
+      fecha_emision: new Date().toLocaleDateString('es-CL'),
+      trabajador: "Juan Pérez",
+      rut_trabajador: "11.222.333-4",
+      cargo: "Especialista",
+      firmantes: [
+        { nombre: "Representante Legal", rut: "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
+        { nombre: "Juan Pérez", rut: "11.222.333-4", email: "juan.perez@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
+      ]
+    };
+  } else if (id.startsWith('LM-')) {
+    documento = {
+      tipo_plantilla: 'medico',
+      empresa: "DocDoc Express Clinic",
+      tipo_documento: "Certificado Médico",
+      estado: "VÁLIDO",
+      fecha_emision: new Date().toLocaleDateString('es-CL'),
+      paciente: "Paciente de Demostración",
+      rut_paciente: "19.876.543-2",
+      diagnostico: "Cuadro Respiratorio",
+      reposo: "03 días",
+      medico: "Dr. Médico Tratante",
+      firmantes: [
+        { nombre: "Dr. Médico Tratante", rut: "10.000.000-0", email: "medico@docdoc.cl", fecha: new Date().toLocaleString('es-CL'), ip: "10.0.0.1", token: "z9y8x7w6v5u4t3s2" }
+      ]
+    };
+  }
 
   if (!documento) {
     return (
@@ -31,6 +52,8 @@ export default async function PaginaValidacion({ params }: { params: Promise<{ i
       </div>
     );
   }
+
+  const isMedico = documento.tipo_plantilla === 'medico';
 
   return (
     <div className="min-h-screen p-4 md:p-8 bg-gray-50 flex flex-col items-center">
@@ -46,7 +69,7 @@ export default async function PaginaValidacion({ params }: { params: Promise<{ i
             <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Detalles del Documento</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Empresa</p>
+                <p className="text-sm text-gray-500">{isMedico ? 'Clínica Emisora' : 'Empresa'}</p>
                 <p className="font-semibold text-gray-800">{documento.empresa}</p>
               </div>
               <div>
@@ -63,17 +86,47 @@ export default async function PaginaValidacion({ params }: { params: Promise<{ i
                 <p className="text-sm text-gray-500">ID de Validación</p>
                 <p className="font-mono text-sm text-gray-800">{id}</p>
               </div>
+              
+              {isMedico ? (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-500">Paciente</p>
+                    <p className="font-semibold text-gray-800">{documento.paciente}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Médico Tratante</p>
+                    <p className="font-semibold text-gray-800">{documento.medico}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-gray-500">Diagnóstico / Resumen</p>
+                    <p className="font-semibold text-gray-800">{documento.diagnostico} ({documento.reposo} de reposo)</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-500">Trabajador</p>
+                    <p className="font-semibold text-gray-800">{documento.trabajador || 'Cecilia Loreto Ortiz Cordero'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Cargo / Motivo</p>
+                    <p className="font-semibold text-gray-800">{documento.cargo || 'Anexo Jornada Laboral'}</p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
           <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mt-6 mb-4">Información de Firmas Electrónicas</h2>
           
           <div className="space-y-4">
-            {documento.firmantes.map((firmante, index) => (
+            {documento.firmantes.map((firmante: any, index: number) => (
               <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="flex justify-between items-start mb-2">
                   <p className="font-bold text-blue-700">{firmante.nombre}</p>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Firmante {index + 1}</span>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    {isMedico ? 'Firma Médica' : `Firmante ${index + 1}`}
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-700">
                   <p><strong>RUT:</strong> {firmante.rut}</p>

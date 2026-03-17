@@ -2,107 +2,193 @@
 import { useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 
+type TemplateType = 'contrato' | 'medico';
+
 export default function GeneradorQR() {
+  const [template, setTemplate] = useState<TemplateType>('contrato');
   const [contratoGenerado, setContratoGenerado] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const crearNuevoContrato = async () => {
+  // Form states - Contrato
+  const [empresa, setEmpresa] = useState('');
+  const [rutEmpresa, setRutEmpresa] = useState('');
+  const [trabajador, setTrabajador] = useState('');
+  const [rutTrabajador, setRutTrabajador] = useState('');
+  const [cargo, setCargo] = useState('');
+  const [sueldo, setSueldo] = useState('');
+  
+  // Form states - Medico
+  const [paciente, setPaciente] = useState('');
+  const [rutPaciente, setRutPaciente] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  const [edad, setEdad] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [institucion, setInstitucion] = useState('');
+  const [diagnostico, setDiagnostico] = useState('');
+  const [reposo, setReposo] = useState('');
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
+  const [tratamiento, setTratamiento] = useState('');
+  const [medico, setMedico] = useState('');
+  const [especialidad, setEspecialidad] = useState('');
+  const [rutMedico, setRutMedico] = useState('');
+  const [registroMedico, setRegistroMedico] = useState('');
+
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    // Simulation: In a real app, this would be a POST to an API/DB
-    const idUnico = `CM-${Date.now()}`;
     
-    // In production, use your real domain. For now, we use a placeholder.
+    const idUnico = template === 'contrato' ? `CT-${Date.now()}` : `LM-${Date.now()}`;
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const urlValidacion = `${baseUrl}/validar/${idUnico}`;
 
-    setContratoGenerado({
+    let payload: any = {
       id: idUnico,
-      empresa: "Consultora Manzano SpA",
-      tipo_documento: "Contrato de Prestación de Servicios",
-      fecha_emision: new Date().toLocaleDateString(),
-      url: urlValidacion
-    });
+      tipo_plantilla: template,
+      url: urlValidacion,
+      fecha_emision: new Date().toLocaleDateString('es-CL'),
+    };
+
+    if (template === 'contrato') {
+      payload = {
+        ...payload,
+        tipo_documento: "Contrato Laboral",
+        empresa,
+        rut_empresa: rutEmpresa,
+        trabajador,
+        rut_trabajador: rutTrabajador,
+        cargo,
+        sueldo
+      };
+    } else {
+      payload = {
+        ...payload,
+        tipo_documento: "Certificado Médico",
+        paciente,
+        rut_paciente: rutPaciente,
+        fecha_nacimiento: fechaNacimiento,
+        edad,
+        direccion,
+        institucion,
+        diagnostico,
+        reposo,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        tratamiento,
+        medico,
+        especialidad,
+        rut_medico: rutMedico,
+        registro_medico: registroMedico
+      };
+    }
+
+    setContratoGenerado(payload);
     setLoading(false);
   };
 
   const descargarPDF = async () => {
     if (!contratoGenerado) return;
-    
     try {
       const response = await fetch('/api/generar-contrato', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contratoGenerado)
       });
-
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `contrato_${contratoGenerado.id}.pdf`;
+        a.download = `${contratoGenerado.tipo_plantilla}_${contratoGenerado.id}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();
       }
     } catch (error) {
-      console.error('Error descargando PDF:', error);
+      console.error('Error:', error);
     }
   };
 
-  return (
-    <div className="p-6 bg-white rounded-xl shadow-md border border-gray-100 max-w-md w-full mx-auto">
-      <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-        <span className="bg-blue-100 text-blue-600 p-2 rounded-lg text-sm">QR</span>
-        Generador de Contratos
-      </h2>
-      
-      {!contratoGenerado ? (
-        <button 
-          onClick={crearNuevoContrato}
-          disabled={loading}
-          className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {loading ? 'Generando...' : 'Generar Nuevo Contrato'}
-        </button>
-      ) : (
+  if (contratoGenerado) {
+    return (
+      <div className="p-6 bg-white rounded-xl shadow-md border border-gray-100 max-w-md w-full mx-auto">
+        <h2 className="text-xl font-bold mb-6 text-gray-800 text-center">Documento Listo</h2>
         <div className="flex flex-col items-center">
           <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-inner mb-4">
-            <QRCodeCanvas 
-              value={contratoGenerado.url} 
-              size={180} 
-              level={"H"}
-              includeMargin={true}
-            />
+             <QRCodeCanvas value={contratoGenerado.url} size={180} level={"H"} includeMargin={true} />
           </div>
-          
-          <div className="w-full space-y-3 mb-6">
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">ID de Contrato</p>
-              <p className="text-sm font-semibold text-gray-700">{contratoGenerado.id}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">URL de Validación</p>
-              <p className="text-xs font-mono text-blue-600 break-all">{contratoGenerado.url}</p>
-            </div>
-          </div>
-
+          <p className="text-sm text-gray-500 mb-4">{contratoGenerado.tipo_documento}</p>
           <div className="grid grid-cols-2 gap-3 w-full">
-            <button 
-              onClick={() => setContratoGenerado(null)}
-              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
-            >
-              Nuevo
-            </button>
-            <button 
-              onClick={descargarPDF}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium flex items-center justify-center gap-1"
-            >
-              Descargar PDF
-            </button>
+            <button onClick={() => setContratoGenerado(null)} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition text-sm font-medium">Nuevo</button>
+            <button onClick={descargarPDF} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">Descargar PDF</button>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 bg-white rounded-xl shadow-md border border-gray-100 max-w-2xl w-full mx-auto">
+      <div className="flex justify-center mb-6">
+        <div className="bg-gray-100 p-1 rounded-lg flex space-x-1">
+          <button 
+            type="button"
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${template === 'contrato' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setTemplate('contrato')}
+          >
+            Contrato Laboral
+          </button>
+          <button 
+            type="button"
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${template === 'medico' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setTemplate('medico')}
+          >
+            Certificado Médico
+          </button>
+        </div>
+      </div>
+
+      <form onSubmit={handleGenerate} className="space-y-4">
+        {template === 'contrato' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label className="block text-xs font-medium text-gray-700">Nombre Empresa</label><input required value={empresa} onChange={e=>setEmpresa(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">RUT Empresa</label><input required value={rutEmpresa} onChange={e=>setRutEmpresa(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Nombre Trabajador</label><input required value={trabajador} onChange={e=>setTrabajador(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">RUT Trabajador</label><input required value={rutTrabajador} onChange={e=>setRutTrabajador(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Cargo</label><input required value={cargo} onChange={e=>setCargo(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Sueldo Base</label><input required type="number" value={sueldo} onChange={e=>setSueldo(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
+          </div>
+        )}
+
+        {template === 'medico' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2 text-md font-bold text-blue-800 border-b pb-1">Datos del Paciente</div>
+            <div><label className="block text-xs font-medium text-gray-700">Paciente</label><input required value={paciente} onChange={e=>setPaciente(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">RUN</label><input required value={rutPaciente} onChange={e=>setRutPaciente(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Fecha Nacimiento</label><input required value={fechaNacimiento} onChange={e=>setFechaNacimiento(e.target.value)} placeholder="DD-MM-YYYY" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Edad Formato (A:9 M:2 D:0)</label><input required value={edad} onChange={e=>setEdad(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-700">Dirección</label><input required value={direccion} onChange={e=>setDireccion(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            
+            <div className="sm:col-span-2 text-md font-bold text-blue-800 border-b pb-1 mt-4">Detalles Médicos</div>
+            <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-700">Institución destino (Para:)</label><input required value={institucion} onChange={e=>setInstitucion(e.target.value)} placeholder="Colegio Arauco Ts. Blancas" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div className="sm:col-span-2"><label className="block text-xs font-medium text-gray-700">Diagnóstico / Motivo</label><input required value={diagnostico} onChange={e=>setDiagnostico(e.target.value)} placeholder="Exacerbación Leve de Cuadro Asmático" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Días Reposo</label><input required type="number" value={reposo} onChange={e=>setReposo(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Tratamiento Sugerido</label><input required value={tratamiento} onChange={e=>setTratamiento(e.target.value)} placeholder="SOS" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Desde (DD/MM/YYYY)</label><input required value={fechaInicio} onChange={e=>setFechaInicio(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Hasta (DD/MM/YYYY)</label><input required value={fechaFin} onChange={e=>setFechaFin(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+
+            <div className="sm:col-span-2 text-md font-bold text-blue-800 border-b pb-1 mt-4">Datos del Médico</div>
+            <div><label className="block text-xs font-medium text-gray-700">Nombre del Médico</label><input required value={medico} onChange={e=>setMedico(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">Especialidad</label><input required value={especialidad} onChange={e=>setEspecialidad(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">RUN Médico</label><input required value={rutMedico} onChange={e=>setRutMedico(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+            <div><label className="block text-xs font-medium text-gray-700">N° REG-SIS</label><input required value={registroMedico} onChange={e=>setRegistroMedico(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" /></div>
+          </div>
+        )}
+
+        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-sm flex items-center justify-center mt-6">
+          {loading ? 'Procesando...' : 'Generar Documento'}
+        </button>
+      </form>
     </div>
   );
 }
