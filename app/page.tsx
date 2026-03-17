@@ -1,61 +1,38 @@
 'use client';
-import { useState } from 'react';
 import Scanner from '@/components/Scanner';
-import GeneradorQR from '@/components/GeneradorQR';
+import Link from 'next/link';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'scan' | 'generate'>('scan');
-
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
       <header className="bg-white border-b border-gray-200 py-6 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-3xl font-extrabold text-blue-600 mb-2">Validador de Contratos</h1>
-          <p className="text-gray-500 max-w-lg mx-auto">
-            Sistema seguro para la validación de firmas y autenticidad de documentos mediante tecnología QR.
-          </p>
+        <div className="max-w-4xl mx-auto px-4 flex justify-between items-center">
+          <div className="text-left">
+             <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-600 mb-1">Validador de Contratos</h1>
+             <p className="text-gray-500 text-sm sm:text-base">
+               Sistema seguro para la validación de firmas y autenticidad.
+             </p>
+          </div>
+          <div>
+            <Link 
+              href="/login"
+              className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition"
+            >
+              Acceso Institucional
+            </Link>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        {/* Tab Switcher */}
-        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 mb-10 max-w-sm mx-auto">
-          <button
-            onClick={() => setActiveTab('scan')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${
-              activeTab === 'scan' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Validar (Escanear)
-          </button>
-          <button
-            onClick={() => setActiveTab('generate')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition ${
-              activeTab === 'generate' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Generar QR
-          </button>
-        </div>
-
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-12">
         <div className="flex flex-col items-center">
-          {activeTab === 'scan' ? (
             <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-8 text-center">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Escanear Documento</h2>
-                <p className="text-sm text-gray-500">Coloca el código QR del contrato frente a la cámara.</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Escanear Documento</h2>
+                <p className="text-gray-500">Coloca el código QR del contrato frente a la cámara para verificar su validez.</p>
               </div>
               <Scanner />
             </div>
-          ) : (
-            <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-8 text-center">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Crear Nuevo Registro</h2>
-                <p className="text-sm text-gray-500">Genera un contrato de prueba y descarga el PDF con su QR único.</p>
-              </div>
-              <GeneradorQR />
-            </div>
-          )}
         </div>
 
         {/* Info Section */}
@@ -78,9 +55,9 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="mt-20 border-t border-gray-200 py-10 bg-white">
+      <footer className="border-t border-gray-200 py-8 bg-white mt-auto">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-gray-400 text-sm">© 2026 Validador de Contratos - Demo para Vercel</p>
+          <p className="text-gray-400 text-sm">© 2026 Validador de Contratos</p>
         </div>
       </footer>
     </div>
