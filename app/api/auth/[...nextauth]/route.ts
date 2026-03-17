@@ -44,6 +44,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_local_development_only_09fd751f098f983f16f9a37327d",
 };
 
 const handler = NextAuth(authOptions);
