@@ -129,35 +129,31 @@ export async function POST(request: Request) {
       // Dibujar zona de Fecha (Izquierda)
       page.drawText(`${data.fecha_emision || ''}`, { x: 100, y: signatureLineY + 5, size: 10, font: fontRegular });
       page.drawText(`Fecha`, { x: margin, y: signatureLineY + 2, size: 10, font: fontRegular });
-      // Línea de Fecha, con un grosor similar al de la imagen
+      // Línea de Fecha
       page.drawLine({ start: { x: 90, y: signatureLineY }, end: { x: 260, y: signatureLineY }, thickness: 1.5, color: rgb(0,0,0) });
 
-      // Cargar imagen de la firma (si existe)
+      // Dibujar LA LÍNEA DE FIRMA (Derecha) - SIEMPRE SE DIBUJA PARA MANTENER SIMETRÍA EXACTA
       const medCenterX = 430;
-      let hasSignatureImage = false;
+      page.drawLine({ start: { x: medCenterX - 85, y: signatureLineY }, end: { x: medCenterX + 85, y: signatureLineY }, thickness: 1.5, color: rgb(0,0,0) });
+
+      // Cargar imagen de la firma (si existe) y ponerla ENCIMA de la línea
       try {
         const firmaPath = path.join(process.cwd(), 'public', 'firma.png');
         if (fs.existsSync(firmaPath)) {
             const firmaBuffer = fs.readFileSync(firmaPath);
             const firmaImage = await pdfDoc.embedPng(firmaBuffer);
-            // Escalar la firma para que la línea negra encaje bien
-            const firmaDims = firmaImage.scaleToFit(170, 85);
+            // Escalar la firma para que flote sobre la línea
+            const firmaDims = firmaImage.scaleToFit(160, 75);
             
             page.drawImage(firmaImage, {
               x: medCenterX - (firmaDims.width / 2),
-              y: signatureLineY, // La base de la imagen tocando exactamente la misma línea Y
+              y: signatureLineY + 2, // Ligeramente por encima de la línea negra dibujada
               width: firmaDims.width,
               height: firmaDims.height,
             });
-            hasSignatureImage = true;
         }
       } catch (e) {
         console.log("No se pudo cargar la firma:", e);
-      }
-
-      // Si no hay imagen de firma, dibujamos una línea manual para que el doctor la firme
-      if (!hasSignatureImage) {
-        page.drawLine({ start: { x: medCenterX - 85, y: signatureLineY }, end: { x: medCenterX + 85, y: signatureLineY }, thickness: 1.5, color: rgb(0,0,0) });
       }
       
       // Datos Médico debajo de la línea
