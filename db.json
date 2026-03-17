@@ -1,0 +1,25 @@
+{
+  "doc-anexo-001": {
+    "empresa": "SALESLAND CHILE SPA",
+    "tipo_documento": "ANEXO CAMBIO JORNADA LABORAL",
+    "estado": "VÁLIDO",
+    "firmantes": [
+      {
+        "nombre": "Cecilia Loreto Ortiz Cordero",
+        "rut": "10.712.051-3",
+        "email": "ceciliaortiz@salesland.net",
+        "fecha": "04/02/2025 a las 17:49",
+        "ip": "181.203.28.25",
+        "token": "cd94da4358c1dc86e9a83c0fc9e9c878"
+      },
+      {
+        "nombre": "Ender Javier Piña Rojas",
+        "rut": "26.728.535-7",
+        "email": "ENDERJPINAR@GMAIL.COM",
+        "fecha": "04/02/2025 a las 12:51",
+        "ip": "191.125.20.57",
+        "token": "ае6a7e214e5c9427cd8ba72daadf290e"
+      }
+    ]
+  }
+}
