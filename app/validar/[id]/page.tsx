@@ -1,4 +1,5 @@
 import db from '../../../db.json';
+import { decodeDocumento, TIPO_CONTRATO, TIPO_MEDICO } from '@/lib/documento-payload';
 
 export default async function PaginaValidacion({ 
   params, 
@@ -24,46 +25,26 @@ export default async function PaginaValidacion({
       const buffer = Buffer.from(b64, 'base64');
       const decodedStr = new TextDecoder('utf-8').decode(buffer);
       const parsedArr = JSON.parse(decodedStr);
+      const decodificado = decodeDocumento(parsedArr);
 
-      if (Array.isArray(parsedArr)) {
-        if (parsedArr[0] === 'c') {
+      if (decodificado) {
+        const { tipo, campos } = decodificado;
+
+        if (tipo === TIPO_CONTRATO) {
           documento = {
+            ...campos,
             tipo_plantilla: 'contrato',
-            tipo_documento: 'Contrato Laboral',
-            id: parsedArr[1],
-            fecha_emision: parsedArr[2],
-            empresa: parsedArr[3],
-            rut_empresa: parsedArr[4],
-            trabajador: parsedArr[5],
-            rut_trabajador: parsedArr[6],
-            cargo: parsedArr[7],
-            sueldo: parsedArr[8]
+            tipo_documento: 'Contrato Laboral'
           };
           documento.firmantes = [
             { nombre: "Representante Legal", rut: documento.rut_empresa || "12.345.678-9", email: "representante@empresa.cl", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.1", token: "a1b2c3d4e5f6g7h8" },
             { nombre: documento.trabajador || "Trabajador", rut: documento.rut_trabajador || "11.222.333-4", email: "trabajador@email.com", fecha: new Date().toLocaleString('es-CL'), ip: "192.168.1.20", token: "h8g7f6e5d4c3b2a1" }
           ];
-        } else if (parsedArr[0] === 'm') {
+        } else if (tipo === TIPO_MEDICO) {
           documento = {
+            ...campos,
             tipo_plantilla: 'medico',
             tipo_documento: 'Certificado Médico',
-            id: parsedArr[1],
-            fecha_emision: parsedArr[2],
-            paciente: parsedArr[3],
-            rut_paciente: parsedArr[4],
-            fecha_nacimiento: parsedArr[5],
-            edad: parsedArr[6],
-            direccion: parsedArr[7],
-            institucion: parsedArr[8],
-            diagnostico: parsedArr[9],
-            reposo: parsedArr[10],
-            fecha_inicio: parsedArr[11],
-            fecha_fin: parsedArr[12],
-            tratamiento: parsedArr[13],
-            medico: parsedArr[14],
-            especialidad: parsedArr[15],
-            rut_medico: parsedArr[16],
-            registro_medico: parsedArr[17],
             empresa: "Clinica DocDoc"
           };
           documento.firmantes = [
@@ -160,7 +141,11 @@ export default async function PaginaValidacion({
                 <p className="text-sm text-gray-500">ID de Validación</p>
                 <p className="font-mono text-sm text-gray-800">{id}</p>
               </div>
-              
+              <div>
+                <p className="text-sm text-gray-500">Fecha de Emisión</p>
+                <p className="font-semibold text-gray-800">{documento.fecha_emision || 'No registrada'}</p>
+              </div>
+
               {isMedico ? (
                 <>
                   <div>

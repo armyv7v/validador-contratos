@@ -1,13 +1,28 @@
 'use client';
 import { useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { encodeDocumento, TIPO_CONTRATO, TIPO_MEDICO } from '@/lib/documento-payload';
 
 type TemplateType = 'contrato' | 'medico';
+
+const hoyISO = () => {
+  const d = new Date();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
+};
+
+const formatearFecha = (iso: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-CL');
+};
 
 export default function GeneradorQR() {
   const [template, setTemplate] = useState<TemplateType>('contrato');
   const [contratoGenerado, setContratoGenerado] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [fechaEmision, setFechaEmision] = useState(hoyISO);
 
   // Form states - Contrato
   const [empresa, setEmpresa] = useState('');
@@ -72,42 +87,41 @@ export default function GeneradorQR() {
     const idUnico = template === 'contrato' ? `CT-${Date.now()}` : `LM-${Date.now()}`;
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     let urlValidacion = `${baseUrl}/validar/${idUnico}`;
+    const fechaEmisionTexto = formatearFecha(fechaEmision);
 
     // Payload optimizado minimalista para el QR
-    let compactPayload: any[];
+    let compactPayload: string[];
     if (template === 'contrato') {
-      compactPayload = [
-        'c',
-        idUnico,
-        new Date().toLocaleDateString('es-CL'),
+      compactPayload = encodeDocumento(TIPO_CONTRATO, {
+        id: idUnico,
+        fecha_emision: fechaEmisionTexto,
         empresa,
-        rutEmpresa,
+        rut_empresa: rutEmpresa,
         trabajador,
-        rutTrabajador,
+        rut_trabajador: rutTrabajador,
         cargo,
         sueldo
-      ];
+      });
     } else {
-      compactPayload = [
-        'm',
-        idUnico,
-        new Date().toLocaleDateString('es-CL'),
+      compactPayload = encodeDocumento(TIPO_MEDICO, {
+        id: idUnico,
+        fecha_emision: fechaEmisionTexto,
         paciente,
-        rutPaciente,
-        fechaNacimiento,
+        rut_paciente: rutPaciente,
+        fecha_nacimiento: fechaNacimiento,
         edad,
         direccion,
         institucion,
         diagnostico,
         reposo,
-        fechaInicio,
-        fechaFin,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
         tratamiento,
         medico,
         especialidad,
-        rutMedico,
-        registroMedico
-      ];
+        rut_medico: rutMedico,
+        registro_medico: registroMedico
+      });
     }
 
     // Codificar los datos arr en la URL para que la página de validación pueda leerlos
@@ -130,7 +144,7 @@ export default function GeneradorQR() {
       id: idUnico,
       tipo_plantilla: template,
       url: urlValidacion,
-      fecha_emision: new Date().toLocaleDateString('es-CL'),
+      fecha_emision: fechaEmisionTexto,
     };
 
     if (template === 'contrato') {
@@ -233,6 +247,20 @@ export default function GeneradorQR() {
       </div>
 
       <form onSubmit={handleGenerate} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-700">Fecha de Emisión</label>
+            <input
+              required
+              type="date"
+              value={fechaEmision}
+              max={hoyISO()}
+              onChange={e => setFechaEmision(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+        </div>
+
         {template === 'contrato' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="block text-xs font-medium text-gray-700">Nombre Empresa</label><input required value={empresa} onChange={e=>setEmpresa(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500 sm:text-sm" /></div>
