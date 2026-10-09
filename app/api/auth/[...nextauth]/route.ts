@@ -6,21 +6,28 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Administrador",
       credentials: {
-        username: { label: "Usuario", type: "text", placeholder: "admin" },
+        username: { label: "Usuario", type: "text" },
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        // Validación estática simple
-        const user = { id: "1", name: "Admin", email: "admin@useche.cl" };
+        const expectedUser = process.env.ADMIN_USERNAME;
+        const expectedPass = process.env.ADMIN_PASSWORD;
 
-        if (
-          credentials?.username === "admin" &&
-          credentials?.password === "admin123"
-        ) {
-          return user;
-        } else {
+        if (!expectedUser || !expectedPass) {
+          console.error(
+            "[auth] ADMIN_USERNAME / ADMIN_PASSWORD no configuradas. Login deshabilitado."
+          );
           return null;
         }
+
+        if (
+          credentials?.username !== expectedUser ||
+          credentials?.password !== expectedPass
+        ) {
+          return null;
+        }
+
+        return { id: "1", name: "Admin", email: "admin@useche.cl" };
       },
     }),
   ],
@@ -44,7 +51,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_local_development_only_09fd751f098f983f16f9a37327d",
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
